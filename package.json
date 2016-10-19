@@ -1,0 +1,23 @@
+{
+  "name": "purebox",
+  "version": "0.0.1",
+  "description": "Functional UI state management still in early development. Don't use just yet.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "rm -rf dist && webpack"
+  },
+  "author": "Braden Snell",
+  "license": "MIT",
+  "dependencies": {
+    "lodash": "^4.16.4",
+    "react": "^15.3.2"
+  },
+  "devDependencies": {
+    "@types/lodash": "^4.14.37",
+    "@types/react": "^0.14.41",
+    "ts-loader": "^0.9.4",
+    "typescript": "^2.0.3",
+    "webpack": "^1.13.2"
+  }
+}
