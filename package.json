@@ -1,6 +1,6 @@
 {
   "name": "purebox",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Functional UI state management still in early development. Don't use just yet.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
