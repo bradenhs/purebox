@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "rm -rf dist && webpack"
+    "build": "rm -rf dist && webpack && cp dist/index.js dev/purebox/ && cp dist/index.d.ts dev/purebox/"
   },
   "author": "Braden Snell",
   "license": "MIT",

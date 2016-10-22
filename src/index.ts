@@ -35,7 +35,9 @@ export interface IProviderProps<T> {
 
 export interface IPureBox<State> {
   state: State;
-  pureComponent<T>(component: (props: T) => JSX.Element):React.ClassicComponentClass<T>;
+  pureComponent<T>(
+    component: (props: T) => JSX.Element
+  ):React.ClassicComponentClass<T>;
   update(operationName: string, updater: (state: State) => void): void;
   observe(observer: (state?: State) => void);
   StateProvider: React.ClassicComponentClass<IProviderProps<State>>;
