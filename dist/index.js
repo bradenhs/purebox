@@ -238,7 +238,8 @@ module.exports =
 	        }
 	    }
 	    _isPrimitive(val) {
-	        return (val.constructor === Number ||
+	        return (val === void 0 ||
+	            val.constructor === Number ||
 	            val.constructor === String ||
 	            val.constructor === Boolean);
 	    }

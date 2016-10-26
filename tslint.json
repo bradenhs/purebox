@@ -1,0 +1,19 @@
+{
+  "extends": ["tslint:recommended", "tslint-react"],
+  "rules": {
+    "max-line-length": [ true, 80 ],
+    "jsx-no-lambda": false,
+    "quotemark": [
+      true,
+      "single"
+    ],
+    "variable-name": [
+      true, "ban-keywords", "check-format", "allow-leading-underscore",
+      "allow-pascal-case"
+    ],
+    "no-console": [
+      false
+    ],
+    "object-literal-sort-keys": false
+  }
+}

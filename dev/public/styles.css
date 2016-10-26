@@ -1,0 +1,19 @@
+.test-app {
+  position: relative;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  padding: 20px;
+  font-family: Arial;
+}
+
+.test-app.light {
+  color: black;
+  background: white;
+}
+
+.test-app.dark {
+  color: white;
+  background: black;
+}

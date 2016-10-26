@@ -246,6 +246,7 @@ class PureBox<State> implements IPureBox<State> {
 
   private _isPrimitive(val) {
     return (
+      val === void 0 ||
       val.constructor === Number ||
       val.constructor === String ||
       val.constructor === Boolean
@@ -300,6 +301,6 @@ export function at<T>(stateChild: T) {
   };
 }
 
-export function createBox<T>(initialState: T, options: IPureBoxOptions): IPureBox<T> {
+export function createBox<T>(initialState: T, options?: IPureBoxOptions): IPureBox<T> {
   return new PureBox(initialState, options);
 }

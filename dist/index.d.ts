@@ -21,4 +21,4 @@ export declare function at<T>(stateChild: T): {
     update: (operationName: string, updater: (stateChild: T) => void) => void;
     observe: (observer: (stateChild?: T) => void) => void;
 };
-export declare function createBox<T>(initialState: T, options: IPureBoxOptions): IPureBox<T>;
+export declare function createBox<T>(initialState: T, options?: IPureBoxOptions): IPureBox<T>;
