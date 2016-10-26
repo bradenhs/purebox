@@ -1,6 +1,27 @@
 import * as React from 'react';
 import { some, each, cloneDeep } from 'lodash';
 
+const styles = {
+  red: 'font-weight: normal; color: #900',
+  boldRed: 'font-weight: bold; color: #900',
+  green: 'font-weight: normal; color: #090',
+  boldGreen: 'font-weight: bold; color: #090',
+  blue: 'font-weight: normal; color: #009',
+  boldBlue: 'font-weight: bold; color: #009',
+  grey: 'font-weight: normal; color: #999',
+  dimGrey: 'font-weight: normal; color: #bbb',
+  yellow: 'font-weight: normal; color: #990',
+};
+
+/**
+ *    ┌ Running Operation "Add Tweet from Database"
+ *  ✚ ├╼ add state.model.tweets[9] value
+ *  ✖ ├╼ remove state.model.tweets[0] was value
+ *  ↔ ├╼ change state.model.tweets[0] from value to value
+ *    └ Done revert with: rewindTo(0)
+ * 
+ */
+
 const BOX = '__pure_box_object';
 const PATH = '__pure_box_path';
 const PROXY = '__pure_box_proxy';
@@ -36,12 +57,12 @@ export interface IProviderProps<T> {
 
 export interface IPureBox<State> {
   state: State;
+  StateProvider: React.ClassicComponentClass<IProviderProps<State>>;
   pureComponent<T>(
     component: (props: T) => JSX.Element
-  ):React.ClassicComponentClass<T>;
+  ): React.ClassicComponentClass<T>;
   update(operationName: string, updater: (state: State) => void): void;
   observe(observer: (state?: State) => void);
-  StateProvider: React.ClassicComponentClass<IProviderProps<State>>;
 }
 
 class PureBox<State> implements IPureBox<State> {
@@ -120,18 +141,23 @@ class PureBox<State> implements IPureBox<State> {
   }
 
   private _update<T>(
-    logMessage: string, obj: T, updater: (obj: T) => void
+    operationName: string, obj: T, updater: (obj: T) => void
   ) {
     // Log updates
     if (this._options.devMode && this._options.logging) {
-      console.log(logMessage);
+      console.log(
+        `%c  ┌ %cRunning Operation %c"${operationName}"`,
+        styles.dimGrey, styles.yellow, styles.grey
+      );
     }
 
     // Ensure object to modify is part of state tree
     if (obj === null) {
+      console.log('%cPUREBOX ERROR', styles.boldRed);
       throw Error('The object you provided was null');
     }
     if (!this._isPartOfStateTree(obj)) {
+      console.log('%cPUREBOX ERROR', styles.boldRed);
       throw Error(
         `The object you provided to the box's update method does not appear to
         be a part of the state's tree.`
@@ -148,6 +174,12 @@ class PureBox<State> implements IPureBox<State> {
 
     // Store differences between old and updated
     // TODO
+
+    // Log out done and where to revert
+    console.log(
+      `  %c└ %cDone %crevert with: rewindTo(${this._round - 1})`,
+      styles.dimGrey, styles.yellow, styles.dimGrey,
+    );
 
     // Notify observers
     each(this._observersToNotify, observer => observer());
@@ -208,7 +240,11 @@ class PureBox<State> implements IPureBox<State> {
       },
       set: (target, key, value) => {
         if (!this._mutating) {
-          throw Error('Can\'t touch this.');
+          console.log('%cPUREBOX ERROR:', styles.boldRed);
+          throw Error(
+            'Mutating the state outside of the PureBox update method ' +
+            'is not allowed.'
+          );
         }
         let oldVal = target[key];
         target[key] = this._proxy(value, target);
@@ -231,7 +267,6 @@ class PureBox<State> implements IPureBox<State> {
   }
 
   private _logDiff(obj, key, val, oldVal) {
-    console.log('Diffing happens here');
     // add
     // replace
     // remove
@@ -244,11 +279,24 @@ class PureBox<State> implements IPureBox<State> {
         removedItemIndex++;
       }
     } else if (val === void 0) {
-      console.log('removed', obj[PATH] + '/' + key);
+      console.log(
+        `%c✖ %c├╼ %cremoved %c${obj[PATH] + '/' + key} %cwas %c${val}`,
+        styles.red, styles.dimGrey, styles.boldRed, styles.grey,
+        styles.dimGrey, styles.grey
+      );
     } else if (oldVal === void 0) {
-      console.log('added', obj[PATH] + '/' + key, val);
+      console.log(
+        `%c✚ %c├╼ %cadded %c${obj[PATH] + '/' + key} %as ${val}`,
+        styles.green, styles.dimGrey, styles.boldGreen, styles.grey,
+        styles.dimGrey
+      );
     } else {
-      console.log('replace', obj[PATH] + '/' + key, val);
+      console.log(
+        `%c↔ %c├╼ %cchanged %c${obj[PATH] + '/' + key} ` +
+        `%cfrom %c${oldVal} %cto %c${val}`,
+        styles.blue, styles.dimGrey, styles.boldBlue, styles.grey,
+        styles.dimGrey, styles.grey, styles.dimGrey, styles.grey
+      );
     }
   }
 

@@ -12,10 +12,10 @@ export interface IProviderProps<T> {
 }
 export interface IPureBox<State> {
     state: State;
+    StateProvider: React.ClassicComponentClass<IProviderProps<State>>;
     pureComponent<T>(component: (props: T) => JSX.Element): React.ClassicComponentClass<T>;
     update(operationName: string, updater: (state: State) => void): void;
     observe(observer: (state?: State) => void): any;
-    StateProvider: React.ClassicComponentClass<IProviderProps<State>>;
 }
 export declare function at<T>(stateChild: T): {
     update: (operationName: string, updater: (stateChild: T) => void) => void;
