@@ -49,6 +49,7 @@ module.exports =
 	const React = __webpack_require__(1);
 	const lodash_1 = __webpack_require__(34);
 	const BOX = '__pure_box_object';
+	const PATH = '__pure_box_path';
 	const PROXY = '__pure_box_proxy';
 	const PARENT = '__pure_box_parent';
 	const OBSERVERS = '__pure_box_observers';
@@ -182,6 +183,10 @@ module.exports =
 	        Object.defineProperty(node, PARENT, {
 	            value: parent,
 	        });
+	        Object.defineProperty(node, PATH, {
+	            value: (parent === void 0 ? '' : (parent[PATH] || '') + '/' +
+	                Object.keys(parent).find(key => parent[key] === node)),
+	        });
 	        let keys = Object.keys(node);
 	        for (let k of keys) {
 	            node[k] = this._proxy(node[k], node);
@@ -218,6 +223,7 @@ module.exports =
 	        });
 	    }
 	    _logDiff(obj, key, val, oldVal) {
+	        console.log('Diffing happens here');
 	        // add
 	        // replace
 	        // remove
@@ -226,15 +232,18 @@ module.exports =
 	        if (Array.isArray(obj) && key === 'length' && val < oldVal) {
 	            let removedItemIndex = val;
 	            while (removedItemIndex < oldVal) {
-	                console.log('Removed index ' + removedItemIndex + ' from array');
+	                console.log('removed', removedItemIndex);
 	                removedItemIndex++;
 	            }
 	        }
 	        else if (val === void 0) {
-	            console.log('removed');
+	            console.log('removed', obj[PATH] + '/' + key);
+	        }
+	        else if (oldVal === void 0) {
+	            console.log('added', obj[PATH] + '/' + key, val);
 	        }
 	        else {
-	            console.log('Value changed to ' + JSON.stringify(val));
+	            console.log('replaced', obj[PATH] + '/' + key, val);
 	        }
 	    }
 	    _isPrimitive(val) {

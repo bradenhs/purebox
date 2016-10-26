@@ -2,6 +2,7 @@ import * as React from 'react';
 import { some, each, cloneDeep } from 'lodash';
 
 const BOX = '__pure_box_object';
+const PATH = '__pure_box_path';
 const PROXY = '__pure_box_proxy';
 const PARENT = '__pure_box_parent';
 const OBSERVERS = '__pure_box_observers';
@@ -185,6 +186,11 @@ class PureBox<State> implements IPureBox<State> {
       value: parent,
     });
 
+    Object.defineProperty(node, PATH, {
+      value: (parent === void 0 ? '' : (parent[PATH] || '') + '/' +
+        Object.keys(parent).find(key => parent[key] === node)),
+    });
+
     let keys = Object.keys(node);
     for (let k of keys) {
       node[k] = this._proxy(node[k], node);
@@ -225,22 +231,24 @@ class PureBox<State> implements IPureBox<State> {
   }
 
   private _logDiff(obj, key, val, oldVal) {
+    console.log('Diffing happens here');
     // add
     // replace
     // remove
     // copy
     // move
-
     if (Array.isArray(obj) && key === 'length' && val < oldVal) {
       let removedItemIndex = val;
       while (removedItemIndex < oldVal) {
-        console.log('Removed index ' + removedItemIndex + ' from array');
+        console.log('removed', removedItemIndex);
         removedItemIndex++;
       }
     } else if (val === void 0) {
-      console.log('removed');
+      console.log('removed', obj[PATH] + '/' + key);
+    } else if (oldVal === void 0) {
+      console.log('added', obj[PATH] + '/' + key, val);
     } else {
-      console.log('Value changed to ' + JSON.stringify(val));
+      console.log('replace', obj[PATH] + '/' + key, val);
     }
   }
 
