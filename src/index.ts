@@ -357,6 +357,9 @@ export function at<T>(stateChild: T) {
   };
 }
 
-export function createBox<T>(initialState: T, options?: IPureBoxOptions): IPureBox<T> {
+export function createBox<T>(
+  initialState: T, options?: IPureBoxOptions
+): IPureBox<T> {
+  console.log('hi');
   return new PureBox(initialState, options);
 }
