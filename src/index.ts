@@ -360,6 +360,6 @@ export function at<T>(stateChild: T) {
 export function createBox<T>(
   initialState: T, options?: IPureBoxOptions
 ): IPureBox<T> {
-  console.log('hi');
+  console.log('ho');
   return new PureBox(initialState, options);
 }
