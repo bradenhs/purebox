@@ -49,24 +49,48 @@ module.exports =
 	const React = __webpack_require__(1);
 	const lodash_1 = __webpack_require__(34);
 	const styles = {
-	    red: 'font-weight: normal; color: #900',
-	    boldRed: 'font-weight: bold; color: #900',
-	    green: 'font-weight: normal; color: #090',
-	    boldGreen: 'font-weight: bold; color: #090',
-	    blue: 'font-weight: normal; color: #009',
-	    boldBlue: 'font-weight: bold; color: #009',
-	    grey: 'font-weight: normal; color: #999',
-	    dimGrey: 'font-weight: normal; color: #bbb',
-	    yellow: 'font-weight: normal; color: #990',
+	    error: 'font-weight: bold; color: #900',
+	    operationName: [
+	        'color: #333',
+	        'padding: 0 4px',
+	    ].join(';'),
+	    round: [
+	        'padding: 0px 3px',
+	        'color: #666',
+	        'font-weight: 500',
+	    ].join(';'),
+	    addition: [
+	        'background: #090',
+	        'border-radius: 2px',
+	        'padding: 0px 3px',
+	        'color: #fff',
+	        'font-weight: 500',
+	        'margin-left: 3px',
+	    ].join(';'),
+	    removal: [
+	        'background: #700',
+	        'border-radius: 2px',
+	        'padding: 0px 3px',
+	        'color: #fff',
+	        'font-weight: 500',
+	        'margin-left: 3px',
+	    ].join(';'),
+	    modification: [
+	        'background: #009',
+	        'border-radius: 2px',
+	        'padding: 0px 3px',
+	        'color: #fff',
+	        'font-weight: 500',
+	        'margin-left: 3px',
+	    ].join(';'),
+	    noChanges: [
+	        'padding: 0px 3px',
+	        'color: #666',
+	        'font-style: italic',
+	        'font-weight: 500',
+	        'margin-left: 3px',
+	    ].join(';'),
 	};
-	/**
-	 *    ┌ Running Operation "Add Tweet from Database"
-	 *  ✚ ├╼ add state.model.tweets[9] value
-	 *  ✖ ├╼ remove state.model.tweets[0] was value
-	 *  ↔ ├╼ change state.model.tweets[0] from value to value
-	 *    └ Done revert with: rewindTo(0)
-	 *
-	 */
 	const BOX = '__pure_box_object';
 	const PATH = '__pure_box_path';
 	const PROXY = '__pure_box_proxy';
@@ -83,6 +107,7 @@ module.exports =
 	        this._observersToNotify = [];
 	        this._queuedUpdates = [];
 	        this._mutating = false;
+	        this._history = [];
 	        // tslint:disable-next-line
 	        this.StateProvider = React.createClass({
 	            _addObserver: this.observe.bind(this),
@@ -152,32 +177,68 @@ module.exports =
 	        return true;
 	    }
 	    _update(operationName, obj, updater) {
-	        // Log updates
-	        if (this._options.devMode && this._options.logging) {
-	            console.log(`%c  ┌ %cRunning Operation %c"${operationName}"`, styles.dimGrey, styles.yellow, styles.grey);
-	        }
 	        // Ensure object to modify is part of state tree
 	        if (obj === null) {
-	            console.log('%cPUREBOX ERROR', styles.boldRed);
+	            console.log('%cPureBox: Error with operation ' + operationName, styles.error);
 	            throw Error('The object you provided was null');
 	        }
 	        if (!this._isPartOfStateTree(obj)) {
-	            console.log('%cPUREBOX ERROR', styles.boldRed);
+	            console.log('%cPureBox: Error with operation ' + operationName, styles.error);
 	            throw Error(`The object you provided to the box's update method does not appear to
 	        be a part of the state's tree.`);
+	        }
+	        if (operationName === void 0) {
+	            console.log('%cPureBox: Error no operation name provided', styles.error);
+	            throw Error('An operation name must be provided when updating the state');
+	        }
+	        if (operationName.trim() === '') {
+	            console.log('%cPureBox: Invalid operation name', styles.error);
+	            throw Error('The operation name must not be an empty or blank string');
 	        }
 	        // Reset observers to notify
 	        this._observersToNotify = [];
 	        // Run the updater
+	        this._history.push({
+	            round: this._round,
+	            name: operationName.trim(), diffs: [],
+	        });
 	        this._mutating = true;
 	        updater(obj);
 	        this._mutating = false;
-	        // Store differences between old and updated
-	        // TODO
-	        // Log out done and where to revert
-	        console.log(`  %c└ %cDone %crevert with: rewindTo(${this._round - 1})`, styles.dimGrey, styles.yellow, styles.dimGrey);
+	        // Log updates
+	        if (this._options.devMode && this._options.logging) {
+	            this._logOperation(this._currentOperation());
+	        }
 	        // Notify observers
 	        lodash_1.each(this._observersToNotify, observer => observer());
+	    }
+	    _logOperation(operation) {
+	        const additions = operation.diffs.filter(diff => diff.updateType === 'add').length;
+	        const removals = operation.diffs.filter(diff => diff.updateType === 'remove').length;
+	        const modifications = operation.diffs.filter(diff => diff.updateType === 'modify').length;
+	        const updateTypeStyles = [];
+	        if (additions > 0) {
+	            updateTypeStyles.push(styles.addition);
+	        }
+	        if (removals > 0) {
+	            updateTypeStyles.push(styles.removal);
+	        }
+	        if (modifications > 0) {
+	            updateTypeStyles.push(styles.modification);
+	        }
+	        const noChanges = additions < 1 && removals < 1 && modifications < 1;
+	        if (noChanges) {
+	            updateTypeStyles.push(styles.noChanges);
+	        }
+	        console.groupCollapsed(`%c${operation.round}%c${operation.name}` +
+	            (additions > 0 ? `%c${additions > 1 ? additions : ''}+` : '') +
+	            (removals > 0 ? `%c${removals > 1 ? removals : ''}-` : '') +
+	            (modifications > 0 ? `%c${modifications > 1 ? modifications : ''}•` : '') +
+	            (noChanges ? '%cNo changes' : ''), styles.round, styles.operationName, ...updateTypeStyles);
+	        console.groupEnd();
+	    }
+	    _currentOperation() {
+	        return this._history[this._history.length - 1];
 	    }
 	    _runNextUpdate() {
 	        if (this._round === void 0) {
@@ -226,7 +287,7 @@ module.exports =
 	            },
 	            set: (target, key, value) => {
 	                if (!this._mutating) {
-	                    console.log('%cPUREBOX ERROR:', styles.boldRed);
+	                    console.log('%cPUREBOX ERROR:', styles.error);
 	                    throw Error('Mutating the state outside of the PureBox update method ' +
 	                        'is not allowed.');
 	                }
@@ -235,7 +296,7 @@ module.exports =
 	                if (this._isPrimitive(oldVal) && target[key] === oldVal) {
 	                    return true;
 	                }
-	                this._logDiff(target, key, value, oldVal);
+	                this._recordDiff(target, key, value, oldVal);
 	                do {
 	                    lodash_1.each(target[OBSERVERS], observer => {
 	                        this._observersToNotify.push(() => observer(target));
@@ -247,29 +308,32 @@ module.exports =
 	            },
 	        });
 	    }
-	    _logDiff(obj, key, val, oldVal) {
-	        // add
-	        // replace
-	        // remove
-	        // copy
-	        // move
-	        if (Array.isArray(obj) && key === 'length' && val < oldVal) {
-	            let removedItemIndex = val;
-	            while (removedItemIndex < oldVal) {
-	                console.log('removed', removedItemIndex);
+	    _recordDiff(obj, key, newValue, previousValue) {
+	        if (Array.isArray(obj) && key === 'length' && newValue < previousValue) {
+	            let removedItemIndex = newValue;
+	            while (removedItemIndex < previousValue) {
+	                this._currentOperation().diffs.push({
+	                    updateType: 'remove', path: obj[PATH] + `[${removedItemIndex}]`,
+	                    newValue: void 0, previousValue: obj[removedItemIndex],
+	                });
 	                removedItemIndex++;
 	            }
 	        }
-	        else if (val === void 0) {
-	            console.log(`%c✖ %c├╼ %cremoved %c${obj[PATH] + '/' + key} %cwas %c${val}`, styles.red, styles.dimGrey, styles.boldRed, styles.grey, styles.dimGrey, styles.grey);
+	        let updateType;
+	        if (newValue === void 0) {
+	            updateType = 'remove';
 	        }
-	        else if (oldVal === void 0) {
-	            console.log(`%c✚ %c├╼ %cadded %c${obj[PATH] + '/' + key} %as ${val}`, styles.green, styles.dimGrey, styles.boldGreen, styles.grey, styles.dimGrey);
+	        else if (previousValue === void 0) {
+	            updateType = 'add';
 	        }
 	        else {
-	            console.log(`%c↔ %c├╼ %cchanged %c${obj[PATH] + '/' + key} ` +
-	                `%cfrom %c${oldVal} %cto %c${val}`, styles.blue, styles.dimGrey, styles.boldBlue, styles.grey, styles.dimGrey, styles.grey, styles.dimGrey, styles.grey);
+	            updateType = 'modify';
 	        }
+	        this._currentOperation().diffs.push({
+	            updateType, newValue: lodash_1.cloneDeep(newValue),
+	            previousValue: lodash_1.cloneDeep(previousValue),
+	            path: obj[PATH],
+	        });
 	    }
 	    _isPrimitive(val) {
 	        return (val === void 0 ||

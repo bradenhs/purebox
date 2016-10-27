@@ -11,11 +11,18 @@ export const ItemCreator = box.pureComponent(() =>
 
 function addItem() {
   at(box.state.model.items)
-  .update('Adds Item', items => {
+  .update('Add Item', items => {
     items.push({
       text: 'Okay dokey',
       checked: false,
       created: new Date(),
     });
+    items.push({
+      text: 'Okay dokey',
+      checked: false,
+      created: new Date(),
+    });
+    items.pop();
+    items[0].text = 'how are you';
   });
 }
