@@ -1,5 +1,3 @@
-import { has } from 'lodash';
-
 export function ml(strings, ...values) {
   let output = '';
   for (let i = 0; i < values.length; i++) {
