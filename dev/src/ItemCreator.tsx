@@ -10,16 +10,13 @@ export const ItemCreator = box.pureComponent(() =>
 );
 
 function addItem() {
-  at(box.state.model)
-  .update('Add Item', model => {
-    model.items = [
-      {
-        created: new Date(),
-        text: 'hi',
-        checked: false,
-      },
-    ];
-    model.listName = 'Hello';
-    return model;
+  at(box.state.model.items)
+  .update('Add Item', items => {
+    items.push({
+      created: new Date(),
+      checked: false,
+      text: 'Hello',
+    });
+    return items;
   });
 }

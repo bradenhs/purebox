@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { some, each, cloneDeep, clone } from 'lodash';
+import { some, each, cloneDeep, has, clone, forOwn } from 'lodash';
 import { log } from './log';
 import { ml } from './utils';
 
@@ -11,6 +11,7 @@ const PARENT = '__pure_□_parent';
 const OBSERVERS = '__pure_□_observers';
 const ROUND_UPDATED = '__pure_□_round_updated';
 const ROUND_HIT = '__pure_□_round_hit';
+const KEY_IN_PARENT = '__pure_□_key_in_parent';
 
 export interface IPureBoxOptions {
   devMode: boolean;
@@ -54,6 +55,7 @@ export class PureBox<State> {
   private _round: number;
   private _options: IPureBoxOptions;
   private _history: IOperation[] = [];
+  private _diffLoggerActive: boolean = true;
 
   constructor(initialState: State, options: IPureBoxOptions = defaultOptions) {
     this._options = cloneDeep(options);
@@ -160,9 +162,23 @@ export class PureBox<State> {
       round: this._round,
       name: operationName.trim(), diffs: [],
     });
-    this._mutatingObj = obj;
-    updater(obj);
+
+    const objParent = obj[PARENT];
+    const objKeyInParent = obj[KEY_IN_PARENT];
+    this._mutatingObj = this._proxy(clone(obj), objParent, objKeyInParent);
+    forOwn(this._mutatingObj, child => {
+      if (child[PROXY] !== void 0) {
+        child[PARENT] = this._mutatingObj;
+      }
+    });
+    const updateResult = updater(this._mutatingObj);
+    if (updateResult === this._mutatingObj) {
+      this._diffLoggerActive = false;
+    }
+    this._mutatingObj = objParent;
+    objParent[objKeyInParent] = updateResult;
     this._mutatingObj = void 0;
+    this._diffLoggerActive = true;
 
     // Log updates
     if (this._options.devMode && this._options.logging) {
@@ -192,7 +208,7 @@ export class PureBox<State> {
     node: T, parent: any = this._stateProxy, keyInParent: string = ''
   ) {
     if (
-      node === null  || node[PROXY] !== void 0 ||
+      node === null  || node === void 0  || node[PROXY] !== void 0 ||
       (typeof node !== 'object' && typeof node !== 'function')
     ) {
       return node;
@@ -209,16 +225,22 @@ export class PureBox<State> {
     let roundHit;
     let observers = [];
 
+    const specialProxyValues = [];
+    specialProxyValues[OBSERVERS] = () => observers;
+    specialProxyValues[PATH] = () => path;
+    specialProxyValues[ROUND_UPDATED] = () => roundUpdated;
+    specialProxyValues[PARENT] = () => parent;
+    specialProxyValues[ROUND_HIT] = () => roundHit;
+    specialProxyValues[KEY_IN_PARENT] = () => keyInParent;
+    specialProxyValues[BOX] = () => this;
+
     const nodeProxy = new Proxy(node, {
       get: (target, key) => {
-        const proxy = [];
-        proxy[OBSERVERS] = observers;
-        proxy[PATH] = path;
-        proxy[ROUND_UPDATED] = roundUpdated;
-        proxy[PARENT] = parent;
-        proxy[ROUND_HIT] = roundHit;
-        proxy[BOX] = this;
-        return proxy[key] === void 0 ? target[key] : proxy[key];
+        if (has(specialProxyValues, key) &&
+            specialProxyValues[key].constructor === Function) {
+          return specialProxyValues[key]();
+        }
+        return target[key];
       },
       set: (target, key, value) => {
         if (this._mutatingObj === void 0) {
@@ -238,7 +260,17 @@ export class PureBox<State> {
           return true;
         }
 
+        if (key === PARENT) {
+          parent = value;
+          return true;
+        }
+
         let oldVal = target[key];
+
+        if (oldVal === value) {
+          return true;
+        }
+
         let proxyChain = new Proxy([target[PROXY]], {
           get: (t, k) => k === LAST ? t[t.length - 1] : t[k],
         });
@@ -260,6 +292,7 @@ export class PureBox<State> {
           proxyChain[LAST] !== void 0 &&
           proxyChain[LAST][ROUND_UPDATED] !== this._round
         );
+
         if (!hitMutatingObject) {
           throw Error(
             ml`[PUREBOX] Error while executing operation
@@ -267,10 +300,9 @@ export class PureBox<State> {
             update method is mutable.`
           );
         }
-        if (this._isPrimitive(oldVal) && value === oldVal) {
-          return true;
+        if (this._diffLoggerActive) {
+          this._recordDiff(target[PROXY], key, value, oldVal);
         }
-        this._recordDiff(target[PROXY], key, value, oldVal);
         return true;
       },
     });
@@ -319,15 +351,6 @@ export class PureBox<State> {
       previousValue: cloneDeep(previousValue),
       path: obj[PATH] + child,
     });
-  }
-
-  private _isPrimitive(val) {
-    return (
-      val === void 0 ||
-      val.constructor === Number ||
-      val.constructor === String ||
-      val.constructor === Boolean
-    );
   }
 
   // tslint:disable-next-line

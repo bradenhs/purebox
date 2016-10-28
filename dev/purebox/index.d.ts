@@ -30,6 +30,7 @@ export declare class PureBox<State> {
     private _round;
     private _options;
     private _history;
+    private _diffLoggerActive;
     constructor(initialState: State, options?: IPureBoxOptions);
     readonly state: State;
     pureComponent<T>(component: (props: T) => JSX.Element): React.ClassicComponentClass<T>;
@@ -43,7 +44,6 @@ export declare class PureBox<State> {
     private _runNextUpdate();
     private _proxy<T>(node, parent?, keyInParent?);
     private _recordDiff(obj, key, newValue, previousValue);
-    private _isPrimitive(val);
     StateProvider: React.ClassicComponentClass<IProviderProps<State>>;
 }
 export declare function at<T>(stateChild: T): {

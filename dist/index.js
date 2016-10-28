@@ -58,6 +58,7 @@ module.exports =
 	const OBSERVERS = '__pure_□_observers';
 	const ROUND_UPDATED = '__pure_□_round_updated';
 	const ROUND_HIT = '__pure_□_round_hit';
+	const KEY_IN_PARENT = '__pure_□_key_in_parent';
 	const defaultOptions = {
 	    devMode: true,
 	    logging: true,
@@ -68,6 +69,7 @@ module.exports =
 	        this._observersToNotify = [];
 	        this._queuedUpdates = [];
 	        this._history = [];
+	        this._diffLoggerActive = true;
 	        // tslint:disable-next-line
 	        this.StateProvider = React.createClass({
 	            _addObserver: this.observe.bind(this),
@@ -162,9 +164,22 @@ module.exports =
 	            round: this._round,
 	            name: operationName.trim(), diffs: [],
 	        });
-	        this._mutatingObj = obj;
-	        updater(obj);
+	        const objParent = obj[PARENT];
+	        const objKeyInParent = obj[KEY_IN_PARENT];
+	        this._mutatingObj = this._proxy(lodash_1.clone(obj), objParent, objKeyInParent);
+	        lodash_1.forOwn(this._mutatingObj, child => {
+	            if (child[PROXY] !== void 0) {
+	                child[PARENT] = this._mutatingObj;
+	            }
+	        });
+	        const updateResult = updater(this._mutatingObj);
+	        if (updateResult === this._mutatingObj) {
+	            this._diffLoggerActive = false;
+	        }
+	        this._mutatingObj = objParent;
+	        objParent[objKeyInParent] = updateResult;
 	        this._mutatingObj = void 0;
+	        this._diffLoggerActive = true;
 	        // Log updates
 	        if (this._options.devMode && this._options.logging) {
 	            log_1.log.operation(this._currentOperation());
@@ -187,7 +202,7 @@ module.exports =
 	        }
 	    }
 	    _proxy(node, parent = this._stateProxy, keyInParent = '') {
-	        if (node === null || node[PROXY] !== void 0 ||
+	        if (node === null || node === void 0 || node[PROXY] !== void 0 ||
 	            (typeof node !== 'object' && typeof node !== 'function')) {
 	            return node;
 	        }
@@ -202,17 +217,21 @@ module.exports =
 	        let roundUpdated;
 	        let roundHit;
 	        let observers = [];
+	        const specialProxyValues = [];
+	        specialProxyValues[OBSERVERS] = () => observers;
+	        specialProxyValues[PATH] = () => path;
+	        specialProxyValues[ROUND_UPDATED] = () => roundUpdated;
+	        specialProxyValues[PARENT] = () => parent;
+	        specialProxyValues[ROUND_HIT] = () => roundHit;
+	        specialProxyValues[KEY_IN_PARENT] = () => keyInParent;
+	        specialProxyValues[BOX] = () => this;
 	        const nodeProxy = new Proxy(node, {
 	            get: (target, key) => {
-	                const ret = {
-	                    OBSERVERS: observers,
-	                    PATH: path,
-	                    ROUND_UPDATED: roundUpdated,
-	                    PARENT: parent,
-	                    ROUND_HIT: roundHit,
-	                    BOX: this,
-	                }[key];
-	                return ret === void 0 ? target[key] : ret;
+	                if (lodash_1.has(specialProxyValues, key) &&
+	                    specialProxyValues[key].constructor === Function) {
+	                    return specialProxyValues[key]();
+	                }
+	                return target[key];
 	            },
 	            set: (target, key, value) => {
 	                if (this._mutatingObj === void 0) {
@@ -227,7 +246,14 @@ module.exports =
 	                    roundUpdated = value;
 	                    return true;
 	                }
+	                if (key === PARENT) {
+	                    parent = value;
+	                    return true;
+	                }
 	                let oldVal = target[key];
+	                if (oldVal === value) {
+	                    return true;
+	                }
 	                let proxyChain = new Proxy([target[PROXY]], {
 	                    get: (t, k) => k === LAST ? t[t.length - 1] : t[k],
 	                });
@@ -251,10 +277,9 @@ module.exports =
 	            "${this._currentOperation().name}". Only the object provided in the
 	            update method is mutable.`);
 	                }
-	                if (this._isPrimitive(oldVal) && value === oldVal) {
-	                    return true;
+	                if (this._diffLoggerActive) {
+	                    this._recordDiff(target[PROXY], key, value, oldVal);
 	                }
-	                this._recordDiff(target[PROXY], key, value, oldVal);
 	                return true;
 	            },
 	        });
@@ -303,12 +328,6 @@ module.exports =
 	            previousValue: lodash_1.cloneDeep(previousValue),
 	            path: obj[PATH] + child,
 	        });
-	    }
-	    _isPrimitive(val) {
-	        return (val === void 0 ||
-	            val.constructor === Number ||
-	            val.constructor === String ||
-	            val.constructor === Boolean);
 	    }
 	}
 	exports.PureBox = PureBox;
