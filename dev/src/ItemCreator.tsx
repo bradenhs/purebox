@@ -10,7 +10,7 @@ export const ItemCreator = box.pureComponent(() =>
 );
 
 function addItem() {
-  at(box.state.model.items)
+  at(() => box.state.model.items)
   .update('Add Item', items => {
     items.push({
       created: new Date(),

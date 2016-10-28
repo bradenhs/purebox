@@ -33,6 +33,10 @@ export declare class PureBox<State> {
     private _diffLoggerActive;
     constructor(initialState: State, options?: IPureBoxOptions);
     readonly state: State;
+    at<T>(stateChild: T): {
+        update: (operationName: string, updater: (stateChild: T) => T) => void;
+        observe: (observer: (stateChild?: T) => void) => void;
+    };
     pureComponent<T>(component: (props: T) => JSX.Element): React.ClassicComponentClass<T>;
     update(operationName: string, updater: (state: State) => State): void;
     observe(observer: (state?: State) => void): void;
