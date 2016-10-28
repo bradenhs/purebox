@@ -20,7 +20,6 @@ export enum Sort {
 export interface IView {
   color: Color;
   sort: Sort;
-
 }
 
 export interface IState {

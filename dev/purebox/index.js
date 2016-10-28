@@ -354,29 +354,6 @@ module.exports =
 	}
 	exports.PureBox = PureBox;
 	;
-	function at(stateChild) {
-	    if (stateChild.constructor === Number ||
-	        stateChild.constructor === String ||
-	        stateChild.constructor === Boolean) {
-	        throw Error(utils_1.ml `[PUREBOX] 'at' takes an object that is a child of the box state. The
-	      primitive value you gave is not an object. Try passing in the parent
-	      of this property instead.`);
-	    }
-	    if (stateChild[BOX] === void 0) {
-	        throw Error(utils_1.ml `[PUREBOX] The object you passed in is not part of any box object's
-	      state. Make sure you are passing in an object accessible through something
-	      like: [nameOfYourBox].state.some.property.that.is.an.object`);
-	    }
-	    return {
-	        update: (operationName, updater) => {
-	            stateChild[BOX]._updateAt(operationName, stateChild, updater);
-	        },
-	        observe: (observer) => {
-	            stateChild[BOX]._observeAt(stateChild, observer);
-	        },
-	    };
-	}
-	exports.at = at;
 
 
 /***/ },

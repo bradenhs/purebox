@@ -1,6 +1,5 @@
 import * as React from 'react';
 import { box } from './store';
-import { at } from '../purebox';
 
 export const ItemCreator = box.pureComponent(() =>
   <div className='item-creator'>
@@ -10,7 +9,7 @@ export const ItemCreator = box.pureComponent(() =>
 );
 
 function addItem() {
-  at(() => box.state.model.items)
+  box.at(box.state.model.items)
   .update('Add Item', items => {
     items.push({
       created: new Date(),

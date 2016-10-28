@@ -395,32 +395,3 @@ export class PureBox<State> {
     },
   });
 };
-
-export function at<T>(stateChild: T) {
-  if (
-    stateChild.constructor === Number ||
-    stateChild.constructor === String ||
-    stateChild.constructor === Boolean
-  ) {
-    throw Error(
-      ml`[PUREBOX] 'at' takes an object that is a child of the box state. The
-      primitive value you gave is not an object. Try passing in the parent
-      of this property instead.`
-    );
-  }
-  if (stateChild[BOX] === void 0) {
-    throw Error(
-      ml`[PUREBOX] The object you passed in is not part of any box object's
-      state. Make sure you are passing in an object accessible through something
-      like: [nameOfYourBox].state.some.property.that.is.an.object`
-    );
-  }
-  return {
-    update: (operationName: string, updater: (stateChild: T) => T) => {
-      stateChild[BOX]._updateAt(operationName, stateChild, updater);
-    },
-    observe: (observer: (stateChild?: T) => void) => {
-      stateChild[BOX]._observeAt(stateChild, observer);
-    },
-  };
-}

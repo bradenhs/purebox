@@ -50,7 +50,3 @@ export declare class PureBox<State> {
     private _recordDiff(obj, key, newValue, previousValue);
     StateProvider: React.ClassicComponentClass<IProviderProps<State>>;
 }
-export declare function at<T>(stateChild: T): {
-    update: (operationName: string, updater: (stateChild: T) => T) => void;
-    observe: (observer: (stateChild?: T) => void) => void;
-};

@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { at } from '../purebox';
 import { box, Color } from './store';
 
 interface IProps {
@@ -14,20 +13,9 @@ export const ColorSwitcher = box.pureComponent(({color}: IProps) =>
 );
 
 function switchMode(color: Color) {
-  at(() => box.state.view)
+  box.at(box.state.view)
   .update('Switch Color Theme', view => {
     view.color = color === 'DARK' ? 'LIGHT' : 'DARK';
     return view;
   });
-  // console.log(box.state.view.color);
-  // at('LIGHT')
-  // .update('Funny', () => 'DARK');
-  // at(() => box.state.view.color)
-  // .update('Make Dark', () => 'DARK');
-  // at(() => view.color).update('Switch Color Theme', () => 'DARK');
-  // box.update('Switch Color Theme', state =>
-  // update('asdf', () => box.state, state => {
-  //})  
-  // );
-  //
 }
