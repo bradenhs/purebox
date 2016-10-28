@@ -76,6 +76,10 @@ export class PureBox<State> {
     return this._stateProxy;
   }
 
+  public get round() {
+    return this._round;
+  }
+
   public at<T>(stateChild: T) {
     let primitive: IPrimitive<T>;
     if (!this._listeningForPrimitive) {
@@ -133,7 +137,7 @@ export class PureBox<State> {
   }
 
   public pureComponent<T>(component: (props: T) => JSX.Element) {
-    const getRound = () => this._round;
+    const getRound = () => this.round;
     return React.createClass<T, {}>({
       shouldComponentUpdate(nextProps) {
         return some(nextProps, (prop, key) => {
