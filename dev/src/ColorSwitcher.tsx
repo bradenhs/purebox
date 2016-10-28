@@ -13,12 +13,12 @@ export const ColorSwitcher = box.pureComponent(({color}: IProps) =>
 );
 
 function switchMode() {
-  box.at((() => {
-    console.log(box.state.view.color);
-    return 'LIGHT';
-  })())
-  .update(
-    'Switch Theme',
-    color => color === 'DARK' ? 'LIGHT' : 'DARK'
-  );
+  // box.state.model.items[0].name
+  // item
+  let atColor = box.at(box.state.view.color);
+  if (box.state.view.color === 'LIGHT') {
+    atColor.update('Make Dark', () => 'DARK');
+  } else {
+    atColor.update('Make Light', () => 'LIGHT');
+  }
 }
