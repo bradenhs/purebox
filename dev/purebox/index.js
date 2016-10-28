@@ -91,6 +91,9 @@ module.exports =
 	    get state() {
 	        return this._stateProxy;
 	    }
+	    get round() {
+	        return this._round;
+	    }
 	    at(stateChild) {
 	        let primitive;
 	        if (!this._listeningForPrimitive) {
@@ -140,7 +143,7 @@ module.exports =
 	        };
 	    }
 	    pureComponent(component) {
-	        const getRound = () => this._round;
+	        const getRound = () => this.round;
 	        return React.createClass({
 	            shouldComponentUpdate(nextProps) {
 	                return lodash_1.some(nextProps, (prop, key) => {

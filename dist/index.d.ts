@@ -35,6 +35,7 @@ export declare class PureBox<State> {
     private _lastAccessedPrimitive;
     constructor(initialState: State, options?: IPureBoxOptions);
     readonly state: State;
+    readonly round: number;
     at<T>(stateChild: T): {
         update: (operationName: string, updater: (node: T) => T) => void;
         observe: (observer: (stateChild?: T) => void) => void;
