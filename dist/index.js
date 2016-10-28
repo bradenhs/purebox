@@ -70,6 +70,7 @@ module.exports =
 	        this._queuedUpdates = [];
 	        this._history = [];
 	        this._diffLoggerActive = true;
+	        this._listenForPrimitive = false;
 	        // tslint:disable-next-line
 	        this.StateProvider = React.createClass({
 	            _addObserver: this.observe.bind(this),
@@ -90,6 +91,11 @@ module.exports =
 	        return this._stateProxy;
 	    }
 	    at(stateChild) {
+	        if (!this._listenForPrimitive) {
+	            throw Error(utils_1.ml `[PUREBOX] The 'at' method of your box object was accessed in an
+	        unexpected way`);
+	        }
+	        this._listenForPrimitive = false;
 	        if (stateChild.constructor === Number ||
 	            stateChild.constructor === String ||
 	            stateChild.constructor === Boolean) {
@@ -100,7 +106,7 @@ module.exports =
 	        if (stateChild[BOX] !== this) {
 	            throw Error(utils_1.ml `[PUREBOX] The object you passed in is not part of this box object's
 	        state. Make sure you are passing in an object accessible through
-	        something like: [nameOfYourBox].state.some.property.that.is.an.object`);
+	        something like: [nameOfYourBox].state.some.sub.property.of.the.state`);
 	        }
 	        return {
 	            update: (operationName, updater) => {
@@ -354,6 +360,25 @@ module.exports =
 	}
 	exports.PureBox = PureBox;
 	;
+	function createBox(initialState, options) {
+	    return new Proxy(new PureBox(initialState, options), {
+	        get(target, key) {
+	            if (key[0] === '_') {
+	                throw Error(`PUREBOX Attempt to access private box member "${key}" was rejected.`);
+	            }
+	            if (key === 'at') {
+	                target._listenForPrimitive = true;
+	                return target[key].bind(target);
+	            }
+	            return target[key];
+	        },
+	        set(target, key) {
+	            console.error(`PUREBOX Attempt to redefined box member "${key}" was rejected`);
+	            return false;
+	        },
+	    });
+	}
+	exports.createBox = createBox;
 
 
 /***/ },

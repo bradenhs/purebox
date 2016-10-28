@@ -1,4 +1,4 @@
-import { PureBox } from '../purebox/';
+import { createBox } from '../purebox/';
 
 export interface IItem {
   text: string;
@@ -38,4 +38,4 @@ const initialState: IState = {
   },
 };
 
-export const box = new PureBox(initialState);
+export const box = createBox(initialState);

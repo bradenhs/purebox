@@ -18,4 +18,3 @@ export const App = ({state}: IAppProps) =>
 function getAppClassName(state: IState) {
   return `test-app ${state.view.color === 'DARK' ? 'dark' : 'light'}`;
 }
-

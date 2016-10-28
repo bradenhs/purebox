@@ -31,6 +31,7 @@ export declare class PureBox<State> {
     private _options;
     private _history;
     private _diffLoggerActive;
+    private _listenForPrimitive;
     constructor(initialState: State, options?: IPureBoxOptions);
     readonly state: State;
     at<T>(stateChild: T): {
@@ -50,3 +51,4 @@ export declare class PureBox<State> {
     private _recordDiff(obj, key, newValue, previousValue);
     StateProvider: React.ClassicComponentClass<IProviderProps<State>>;
 }
+export declare function createBox<T>(initialState: T, options?: IPureBoxOptions): PureBox<T>;
