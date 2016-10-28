@@ -1,62 +1,16 @@
 import * as React from 'react';
-import { some, each, cloneDeep } from 'lodash';
+import { some, each, cloneDeep, clone } from 'lodash';
+import { log } from './log';
+import { ml } from './utils';
 
-const styles = {
-  error: 'font-weight: bold; color: #900',
-  operationName: [
-    'color: #333',
-    'padding: 0 4px',
-  ].join(';'),
-  round: [
-    'padding: 0px 3px',
-    'color: #666',
-    'font-weight: 500',
-  ].join(';'),
-  addition: [
-    'background: #090',
-    'border-radius: 2px',
-    'padding: 0px 3px',
-    'color: #fff',
-    'font-weight: 500',
-    'margin-left: 3px',
-  ].join(';'),
-  removal: [
-    'background: #700',
-    'border-radius: 2px',
-    'padding: 0px 3px',
-    'color: #fff',
-    'font-weight: 500',
-    'margin-left: 3px',
-  ].join(';'),
-  modification: [
-    'background: #009',
-    'border-radius: 2px',
-    'padding: 0px 3px',
-    'color: #fff',
-    'font-weight: 500',
-    'margin-left: 3px',
-  ].join(';'),
-  noChanges: [
-    'padding: 0px 3px',
-    'color: #666',
-    'font-style: italic',
-    'font-weight: 500',
-    'margin-left: 3px',
-  ].join(';'),
-};
-
-const BOX = '__pure_box_object';
-const PATH = '__pure_box_path';
-const PROXY = '__pure_box_proxy';
-const PARENT = '__pure_box_parent';
-const OBSERVERS = '__pure_box_observers';
-const ROUND_UPDATED = '__pure_box_round_updated';
-
-//  ┌──────────┐
-//  │          │
-//  │   PURE   │
-//  │          │
-//  └──────────┘
+const LAST = '__pure_□_proxy_chain_last';
+const BOX = '__pure_□_object';
+const PATH = '__pure_□_path';
+const PROXY = '__pure_□_proxy';
+const PARENT = '__pure_□_parent';
+const OBSERVERS = '__pure_□_observers';
+const ROUND_UPDATED = '__pure_□_round_updated';
+const ROUND_HIT = '__pure_□_round_hit';
 
 export interface IPureBoxOptions {
   devMode: boolean;
@@ -78,35 +32,25 @@ export interface IProviderProps<T> {
   app: (props: {state: T}) => JSX.Element;
 }
 
-export interface IPureBox<State> {
-  state: State;
-  StateProvider: React.ClassicComponentClass<IProviderProps<State>>;
-  pureComponent<T>(
-    component: (props: T) => JSX.Element
-  ): React.ClassicComponentClass<T>;
-  update(operationName: string, updater: (state: State) => void): void;
-  observe(observer: (state?: State) => void);
-}
-
-interface IDiff {
+export interface IDiff {
   updateType: 'add' | 'remove' | 'modify';
   path: string;
   newValue: string;
   previousValue: string;
 }
 
-interface IOperation {
+export interface IOperation {
   round: number;
   name: string;
   diffs: IDiff[];
 }
 
-class PureBox<State> implements IPureBox<State> {
+export class PureBox<State> {
   private _stateProxy: State;
   private _state: State;
   private _observersToNotify: (() => void)[] = [];
   private _queuedUpdates: (() => void)[] = [];
-  private _mutating: boolean = false;
+  private _mutatingObj: any;
   private _round: number;
   private _options: IPureBoxOptions;
   private _history: IOperation[] = [];
@@ -142,7 +86,7 @@ class PureBox<State> implements IPureBox<State> {
     });
   }
 
-  public update(operationName: string, updater: (state: State) => void) {
+  public update(operationName: string, updater: (state: State) => State) {
     this._updateAt(operationName, this._stateProxy, updater);
   }
 
@@ -155,7 +99,7 @@ class PureBox<State> implements IPureBox<State> {
   }
 
   private _updateAt<T>(
-     operationName: string, stateChild: T, updater: (stateChild: T) => void
+     operationName: string, stateChild: T, updater: (stateChild: T) => T
   ) {
     // Push the update to the update queue. If it's the only item on the queue
     // dequeue immediately.
@@ -178,40 +122,34 @@ class PureBox<State> implements IPureBox<State> {
   }
 
   private _update<T>(
-    operationName: string, obj: T, updater: (obj: T) => void
+    operationName: string, obj: T, updater: (obj: T) => T
   ) {
 
     // Ensure object to modify is part of state tree
     if (obj === null) {
-      console.log(
-        '%cPureBox: Error with operation ' + operationName,
-        styles.error
+      throw Error(
+        ml`[PUREBOX] Error with operation "${operationName}". The object
+        you provided was null.`
       );
-      throw Error('The object you provided was null');
     }
     if (!this._isPartOfStateTree(obj)) {
-      console.log(
-        '%cPureBox: Error with operation ' + operationName,
-        styles.error
-      );
       throw Error(
-        `The object you provided to the box's update method does not appear to
-        be a part of the state's tree.`
+        ml`[PUREBOX] Error with operation ${operationName} The object you
+        provided to the box's update method does not appear to be a part 
+        of the state's tree.`
       );
     }
     if (operationName === void 0) {
-      console.log(
-        '%cPureBox: Error no operation name provided',
-        styles.error
+      throw Error(
+        ml`[PUREBOX] No operation name provided. An operation name must be
+        provided when updating the state.`
       );
-      throw Error('An operation name must be provided when updating the state');
     }
     if (operationName.trim() === '') {
-      console.log(
-        '%cPureBox: Invalid operation name',
-        styles.error
+      throw Error(
+        ml`[PUREBOX] Invalid operation name. The operation name must not be an
+        empty or blank string`
       );
-      throw Error('The operation name must not be an empty or blank string');
     }
 
     // Reset observers to notify
@@ -222,54 +160,17 @@ class PureBox<State> implements IPureBox<State> {
       round: this._round,
       name: operationName.trim(), diffs: [],
     });
-    this._mutating = true;
+    this._mutatingObj = obj;
     updater(obj);
-    this._mutating = false;
+    this._mutatingObj = void 0;
 
     // Log updates
     if (this._options.devMode && this._options.logging) {
-      this._logOperation(this._currentOperation());
+      log.operation(this._currentOperation());
     }
 
     // Notify observers
     each(this._observersToNotify, observer => observer());
-  }
-
-  private _logOperation(operation: IOperation) {
-    const additions = operation.diffs.filter(
-      diff => diff.updateType === 'add'
-    ).length;
-    const removals = operation.diffs.filter(
-      diff => diff.updateType === 'remove'
-    ).length;
-    const modifications = operation.diffs.filter(
-      diff => diff.updateType === 'modify'
-    ).length;
-    const updateTypeStyles = [];
-    if (additions > 0) {
-      updateTypeStyles.push(styles.addition);
-    }
-    if (removals > 0) {
-      updateTypeStyles.push(styles.removal);
-    }
-    if (modifications > 0) {
-      updateTypeStyles.push(styles.modification);
-    }
-    const noChanges = additions < 1 && removals < 1 && modifications < 1;
-    if (noChanges) {
-      updateTypeStyles.push(styles.noChanges);
-    }
-    (console as any).groupCollapsed(
-      `%c${operation.round}%c${operation.name}` +
-      (additions > 0 ? `%c${additions > 1 ? additions : ''}+` : '') +
-      (removals > 0 ? `%c${removals > 1 ? removals : ''}-` : '') +
-      (modifications > 0 ? `%c${modifications > 1 ? modifications : ''}•` : '') +
-      (noChanges ? '%cNo changes' : ''),
-      styles.round,
-      styles.operationName,
-      ...updateTypeStyles,
-    );
-    console.groupEnd();
   }
 
   private _currentOperation() {
@@ -287,74 +188,103 @@ class PureBox<State> implements IPureBox<State> {
     }
   }
 
-  private _proxy<T>(node: T, parent: any = this._stateProxy) {
+  private _proxy<T>(
+    node: T, parent: any = this._stateProxy, keyInParent: string = ''
+  ) {
     if (
-      node === null  || node[PROXY] ||
+      node === null  || node[PROXY] !== void 0 ||
       (typeof node !== 'object' && typeof node !== 'function')
     ) {
       return node;
     }
 
-    Object.defineProperty(node, ROUND_UPDATED, {
-      value: this._round,
-      writable: true,
+    let child;
+    if (Array.isArray(parent)) {
+      child = `[${keyInParent}]`;
+    } else {
+      child = `.${keyInParent}`;
+    }
+    let path = parent === void 0 ? 'state' : parent[PATH] + child;
+    let roundUpdated;
+    let roundHit;
+    let observers = [];
+
+    const nodeProxy = new Proxy(node, {
+      get: (target, key) => {
+        const proxy = [];
+        proxy[OBSERVERS] = observers;
+        proxy[PATH] = path;
+        proxy[ROUND_UPDATED] = roundUpdated;
+        proxy[PARENT] = parent;
+        proxy[ROUND_HIT] = roundHit;
+        proxy[BOX] = this;
+        return proxy[key] === void 0 ? target[key] : proxy[key];
+      },
+      set: (target, key, value) => {
+        if (this._mutatingObj === void 0) {
+          throw Error(
+            ml`[PUREBOX] Mutating the state outside of the PureBox update
+            method is not allowed.`
+          );
+        }
+
+        if (key === ROUND_HIT) {
+          roundHit = value;
+          return true;
+        }
+
+        if (key === ROUND_UPDATED) {
+          roundUpdated = value;
+          return true;
+        }
+
+        let oldVal = target[key];
+        let proxyChain = new Proxy([target[PROXY]], {
+          get: (t, k) => k === LAST ? t[t.length - 1] : t[k],
+        });
+        target[key] = this._proxy(value, proxyChain[LAST], key as string);
+
+        let hitMutatingObject = false;
+        do {
+          if (proxyChain[LAST][ROUND_HIT] === this._round ||
+              proxyChain[LAST] === this._mutatingObj) {
+            hitMutatingObject = true;
+            proxyChain.forEach(item => item[ROUND_HIT] = this._round);
+          }
+          each(proxyChain[LAST][OBSERVERS], observer => {
+            this._observersToNotify.push(() => observer(proxyChain[LAST]));
+          });
+          proxyChain[LAST][ROUND_UPDATED] = this._round;
+          proxyChain.push(proxyChain[LAST][PARENT]);
+        } while (
+          proxyChain[LAST] !== void 0 &&
+          proxyChain[LAST][ROUND_UPDATED] !== this._round
+        );
+        if (!hitMutatingObject) {
+          throw Error(
+            ml`[PUREBOX] Error while executing operation
+            "${this._currentOperation().name}". Only the object provided in the
+            update method is mutable.`
+          );
+        }
+        if (this._isPrimitive(oldVal) && value === oldVal) {
+          return true;
+        }
+        this._recordDiff(target[PROXY], key, value, oldVal);
+        return true;
+      },
     });
 
-    Object.defineProperty(node, OBSERVERS, {
-      value: [],
-      writable: true,
-    });
-
-    Object.defineProperty(node, PARENT, {
-      value: parent,
-    });
-
-    Object.defineProperty(node, PATH, {
-      value: (parent === void 0 ? '' : (parent[PATH] || '') + '/' +
-        Object.keys(parent).find(key => parent[key] === node)),
+    Object.defineProperty(node, PROXY, {
+      value: nodeProxy,
     });
 
     let keys = Object.keys(node);
     for (let k of keys) {
-      node[k] = this._proxy(node[k], node);
+      node[k] = this._proxy(node[k], nodeProxy, k);
     }
 
-    return new Proxy(node, {
-      get: (target, key) => {
-        if (key === PROXY) {
-          return true;
-        }
-        if (key === BOX) {
-          return this;
-        }
-        return target[key];
-      },
-      set: (target, key, value) => {
-        if (!this._mutating) {
-          console.log('%cPUREBOX ERROR:', styles.error);
-          throw Error(
-            'Mutating the state outside of the PureBox update method ' +
-            'is not allowed.'
-          );
-        }
-        let oldVal = target[key];
-        target[key] = this._proxy(value, target);
-        if (this._isPrimitive(oldVal) && target[key] === oldVal) {
-          return true;
-        }
-
-        this._recordDiff(target, key, value, oldVal);
-
-        do {
-          each(target[OBSERVERS], observer => {
-            this._observersToNotify.push(() => observer(target));
-          });
-          target[ROUND_UPDATED] = this._round;
-          target = target[PARENT];
-        } while (target !== void 0 && target[ROUND_UPDATED] !== this._round);
-        return true;
-      },
-    });
+    return nodeProxy;
   }
 
   private _recordDiff(obj, key, newValue, previousValue) {
@@ -362,7 +292,7 @@ class PureBox<State> implements IPureBox<State> {
       let removedItemIndex = newValue;
       while (removedItemIndex < previousValue) {
         this._currentOperation().diffs.push({
-          updateType: 'remove', path: obj[PATH] + `[${removedItemIndex}]`,
+          updateType: 'remove', path: obj[PATH] + '[' + removedItemIndex + ']',
           newValue: void 0, previousValue: obj[removedItemIndex],
         });
         removedItemIndex++;
@@ -376,10 +306,18 @@ class PureBox<State> implements IPureBox<State> {
     } else {
       updateType = 'modify';
     }
+    let child;
+    if (Array.isArray(obj) && isNaN(key)) {
+      child = `["${key}"]`;
+    } else if (Array.isArray(obj)) {
+      child = `[${key}]`;
+    } else {
+      child = `.${key}`;
+    }
     this._currentOperation().diffs.push({
       updateType, newValue: cloneDeep(newValue),
       previousValue: cloneDeep(previousValue),
-      path: obj[PATH],
+      path: obj[PATH] + child,
     });
   }
 
@@ -406,11 +344,6 @@ class PureBox<State> implements IPureBox<State> {
   });
 };
 
-interface ICreateBoxParams<State> {
-  initialState: State;
-  options: IPureBoxOptions;
-}
-
 export function at<T>(stateChild: T) {
   if (
     stateChild.constructor === Number ||
@@ -418,30 +351,24 @@ export function at<T>(stateChild: T) {
     stateChild.constructor === Boolean
   ) {
     throw Error(
-      '`at` takes an object that is a child of the box state. The primitive ' +
-      'value you gave is not an object. Try passing in the parent of this ' +
-      'property instead.'
+      ml`[PUREBOX] 'at' takes an object that is a child of the box state. The
+      primitive value you gave is not an object. Try passing in the parent
+      of this property instead.`
     );
   }
   if (stateChild[BOX] === void 0) {
     throw Error(
-      'The object you passed in is not part of any box object\'s state. Make ' +
-      'sure you are passing in an object accessible through something like: ' +
-      '[nameOfYourBox].state.some.property.that.is.an.object'
+      ml`[PUREBOX] The object you passed in is not part of any box object's
+      state. Make sure you are passing in an object accessible through something
+      like: [nameOfYourBox].state.some.property.that.is.an.object`
     );
   }
   return {
-    update: (operationName: string, updater: (stateChild: T) => void) => {
+    update: (operationName: string, updater: (stateChild: T) => T) => {
       stateChild[BOX]._updateAt(operationName, stateChild, updater);
     },
     observe: (observer: (stateChild?: T) => void) => {
       stateChild[BOX]._observeAt(stateChild, observer);
     },
   };
-}
-
-export function createBox<T>(
-  initialState: T, options?: IPureBoxOptions
-): IPureBox<T> {
-  return new PureBox(initialState, options);
 }

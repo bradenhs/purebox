@@ -17,5 +17,6 @@ function switchMode(color: Color) {
   at(box.state.view)
   .update('Switch Color Theme', view => {
     view.color = color === 'DARK' ? 'LIGHT' : 'DARK';
+    return view;
   });
 }

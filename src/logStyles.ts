@@ -1,0 +1,42 @@
+export const styles = {
+  error: 'font-weight: bold; color: #900',
+  round: [
+    'padding: 0px 3px',
+    'margin-right: 4px',
+    'color: #666',
+    'font-weight: 500',
+  ].join(';'),
+  operationName: 'color: #333; font-weight: 700',
+  addition: [
+    'background: #090',
+    'border-radius: 2px',
+    'padding: 0px 3px',
+    'color: #fff',
+    'font-weight: 500',
+    'margin-left: 3px',
+  ].join(';'),
+  removal: [
+    'background: #700',
+    'border-radius: 2px',
+    'padding: 0px 3px',
+    'color: #fff',
+    'font-weight: 500',
+    'margin-left: 3px',
+  ].join(';'),
+  modification: [
+    'background: #009',
+    'border-radius: 2px',
+    'padding: 0px 3px',
+    'color: #fff',
+    'font-weight: 500',
+    'margin-left: 3px',
+  ].join(';'),
+  muted: [
+    'background: #eee',
+    'border-radius: 2px',
+    'padding: 0px 3px',
+    'color: #bbb',
+    'font-weight: 500',
+    'margin-left: 3px',
+  ].join(';'),
+};
