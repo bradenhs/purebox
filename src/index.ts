@@ -85,6 +85,18 @@ export class PureBox<State> {
       );
     }
     if (this._isPrimitive(stateChild)) {
+      if ((stateChild !== this._lastAccessedPrimitive.value)) {
+        throw Error(
+          ml`[PUREBOX] There was an error running the 'update' method on the
+          primitive value you passed in. Are you assigning a reference to the
+          '[nameOfYourBox].at' method (i.e. 'let at = box.at')? Or perhaps you
+          are using a function to retrieve the primitive you are passing to the
+          'at' method (i.e. 'box.at(myFunction())'). These patterns are
+          discouraged as it leads to unpredictable behavior when passing in
+          primitives to the 'at' method. When passing a primitive to the 'at'
+          method do it like so: 'box.at(subObjectOfState.yourPrimitive)'.`
+        );
+      }
       if (this._lastAccessedPrimitive === void 0) {
         throw Error(
           ml`[PUREBOX] The primitive value you passed to the 'at' method does
@@ -92,7 +104,11 @@ export class PureBox<State> {
           passing in the primitive value in the correct way.`
         );
       } else {
-        primitive = clone(this._lastAccessedPrimitive);
+        primitive = {
+          parent: this._lastAccessedPrimitive.parent,
+          key: this._lastAccessedPrimitive.key,
+          value: this._lastAccessedPrimitive.value,
+        };
         Object.defineProperty(primitive, IS_PRIMITIVE, {
           value: true,
         });
@@ -100,17 +116,10 @@ export class PureBox<State> {
       }
     }
     this._listeningForPrimitive = false;
-    if ((primitive !== void 0 && primitive.parent[BOX] !== this) ||
-        stateChild[BOX] !== this) {
-      throw Error(
-        ml`[PUREBOX] The object you passed in is not part of this box object's
-        state. Make sure you are passing in an object accessible through
-        something like: [nameOfYourBox].state.some.sub.property.of.the.state`
-      );
-    }
     return {
       update: (operationName: string, updater: (node: T) => T) => {
-        stateChild[BOX]._updateAt(
+        const box = stateChild[BOX] || primitive.parent[BOX];
+        box._updateAt(
           operationName, primitive || stateChild, updater
         );
       },
@@ -193,16 +202,6 @@ export class PureBox<State> {
         of the state's tree.`
       );
     }
-    if (stateChild[IS_PRIMITIVE] &&
-        primitive.parent[primitive.key] !== primitive.value) {
-      throw Error(
-        ml`[PUREBOX] There was an error running the update on the primitive
-        value you passed in. Are you assigning a reference to the
-        '[nameOfYourBox].at' method (i.e. let at = box.at)? This pattern is
-        discouraged as it leads to unpredictable behavior when passing in
-        primitives to the 'at' method.`
-      );
-    }
     if (operationName === void 0) {
       throw Error(
         ml`[PUREBOX] No operation name provided. An operation name must be
@@ -225,9 +224,24 @@ export class PureBox<State> {
       name: operationName.trim(), diffs: [],
     });
     if (stateChild[IS_PRIMITIVE]) {
-      this._mutatingObj = primitive;
-      primitive.parent[primitive.key] = updater(primitive.value);
+      const stateChildParent = primitive.parent[PARENT];
+      const stateChildKeyInParent = primitive.parent[KEY_IN_PARENT];
+      this._mutatingObj = this._proxy(
+        clone(primitive.parent), stateChildParent, stateChildKeyInParent
+      );
+      forOwn(this._mutatingObj, child => {
+        if (child[PROXY] !== void 0) {
+          child[PARENT] = this._mutatingObj;
+        }
+      });
+      let primitiveParent = this._mutatingObj;
+      primitiveParent[primitive.key] =
+        updater(this._mutatingObj[primitive.key]);
+      this._diffLoggerActive = false;
+      this._mutatingObj = stateChildParent;
+      stateChildParent[stateChildKeyInParent] = primitiveParent;
       this._mutatingObj = void 0;
+      this._diffLoggerActive = true;
     } else {
       const stateChildParent = stateChild[PARENT];
       const stateChildKeyInParent = stateChild[KEY_IN_PARENT];
@@ -348,16 +362,6 @@ export class PureBox<State> {
           return true;
         }
 
-        if (this._mutatingObj[IS_PRIMITIVE] &&
-            (this._mutatingObj.parent !== target ||
-            this._mutatingObj.key !== key)) {
-          throw Error(
-            ml`[PUREBOX] Error while executing operation
-            "${this._currentOperation().name}". Only the value provided in the
-            update method is mutable.`
-          );
-        }
-
         let oldVal = target[key];
 
         if (oldVal === value) {
@@ -469,7 +473,7 @@ export function createBox<T>(initialState: T, options?: IPureBoxOptions) {
         );
       }
       if (key === 'at') {
-        (target as any)._listenForPrimitive = true;
+        (target as any)._listeningForPrimitive = true;
         return target[key].bind(target);
       }
       return target[key];

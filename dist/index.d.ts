@@ -31,11 +31,12 @@ export declare class PureBox<State> {
     private _options;
     private _history;
     private _diffLoggerActive;
-    private _listenForPrimitive;
+    private _listeningForPrimitive;
+    private _lastAccessedPrimitive;
     constructor(initialState: State, options?: IPureBoxOptions);
     readonly state: State;
     at<T>(stateChild: T): {
-        update: (operationName: string, updater: (stateChild: T) => T) => void;
+        update: (operationName: string, updater: (node: T) => T) => void;
         observe: (observer: (stateChild?: T) => void) => void;
     };
     pureComponent<T>(component: (props: T) => JSX.Element): React.ClassicComponentClass<T>;
@@ -44,9 +45,10 @@ export declare class PureBox<State> {
     private _observeAt<T>(stateChild, observer);
     private _updateAt<T>(operationName, stateChild, updater);
     private _isPartOfStateTree(obj);
-    private _update<T>(operationName, obj, updater);
+    private _update<T>(operationName, stateChild, updater);
     private _currentOperation();
     private _runNextUpdate();
+    private _isPrimitive(val);
     private _proxy<T>(node, parent?, keyInParent?);
     private _recordDiff(obj, key, newValue, previousValue);
     StateProvider: React.ClassicComponentClass<IProviderProps<State>>;

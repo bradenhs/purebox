@@ -13,8 +13,12 @@ export const ColorSwitcher = box.pureComponent(({color}: IProps) =>
 );
 
 function switchMode() {
-  box.at(box.state.view.color)
-  .update('No!', () => 'DARK');
-  // box.at(box.state.view.color)
-  // .update('Switch Color Theme', c => c === 'DARK' ? 'LIGHT' : 'DARK');
+  box.at((() => {
+    console.log(box.state.view.color);
+    return 'LIGHT';
+  })())
+  .update(
+    'Switch Theme',
+    color => color === 'DARK' ? 'LIGHT' : 'DARK'
+  );
 }
