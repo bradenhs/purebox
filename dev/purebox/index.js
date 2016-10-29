@@ -281,7 +281,8 @@ module.exports =
 	    }
 	    _proxy(node, parent = this._stateProxy, keyInParent = '') {
 	        if (node === null || node === void 0 || node[PROXY] !== void 0 ||
-	            (typeof node !== 'object' && typeof node !== 'function')) {
+	            (typeof node !== 'object' && typeof node !== 'function') ||
+	            node.constructor === Date) {
 	            return node;
 	        }
 	        let child;

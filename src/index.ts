@@ -293,7 +293,6 @@ export class PureBox<State> {
 
   private _isPrimitive(val: any) {
     return val === null || val === void 0 ||
-           val.constructor === Date ||
            val.constructor === Number ||
            val.constructor === Boolean ||
            val.constructor === String;
@@ -304,7 +303,8 @@ export class PureBox<State> {
   ) {
     if (
       node === null  || node === void 0  || node[PROXY] !== void 0 ||
-      (typeof node !== 'object' && typeof node !== 'function')
+      (typeof node !== 'object' && typeof node !== 'function') ||
+      node.constructor === Date
     ) {
       return node;
     }
