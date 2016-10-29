@@ -293,6 +293,7 @@ export class PureBox<State> {
 
   private _isPrimitive(val: any) {
     return val === null || val === void 0 ||
+           val.constructor === Date ||
            val.constructor === Number ||
            val.constructor === Boolean ||
            val.constructor === String;
