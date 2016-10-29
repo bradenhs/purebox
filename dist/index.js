@@ -359,9 +359,6 @@ module.exports =
 	                } while (proxyChain[LAST] !== void 0 &&
 	                    proxyChain[LAST][ROUND_UPDATED] !== this._round);
 	                if (!hitMutatingObject) {
-	                    throw Error(utils_1.ml `[PUREBOX] Error while executing operation
-	            "${this._currentOperation().name}". Only the value provided in the
-	            update method is mutable.`);
 	                }
 	                if (this._diffLoggerActive) {
 	                    this._recordDiff(target[PROXY], key, value, oldVal);

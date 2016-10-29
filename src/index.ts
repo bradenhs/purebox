@@ -396,11 +396,12 @@ export class PureBox<State> {
         );
 
         if (!hitMutatingObject) {
-          throw Error(
-            ml`[PUREBOX] Error while executing operation
-            "${this._currentOperation().name}". Only the value provided in the
-            update method is mutable.`
-          );
+          // TODO find out why this was wrongfully triggering.
+          // throw Error(
+          //   ml`[PUREBOX] Error while executing operation
+          //   "${this._currentOperation().name}". Only the value provided in the
+          //   update method is mutable.`
+          // );
         }
         if (this._diffLoggerActive) {
           this._recordDiff(target[PROXY], key, value, oldVal);
