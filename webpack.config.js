@@ -1,15 +1,18 @@
 var path = require('path');
 
 module.exports = {
-  context: path.join(__dirname, '/src'),
-  entry: './index.ts',
+  context: path.join(__dirname, '/src2'),
+  entry: {
+    'index': './index.ts',
+    'react/index': './react/index.ts'
+  },
   resolve: {
     extensions: ['.webpack.js', '.web.js', '.ts', '.tsx', '.js', ''],
   },
   output: {
     libraryTarget: 'commonjs2',
     path: path.join(__dirname, 'dist'),
-    filename: 'index.js'
+    filename: '[name].js'
   },
   module: {
     loaders: [

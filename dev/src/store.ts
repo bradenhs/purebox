@@ -1,4 +1,4 @@
-import { createBox } from '../purebox/';
+import { createBox } from '../purebox/react/';
 
 export interface IItem {
   text: string;
@@ -37,6 +37,8 @@ const initialState: IState = {
     sort: Sort.NEWEST_FIRST,
   },
 };
+
+createBox()
 
 export const box = createBox(initialState);
 

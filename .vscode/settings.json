@@ -1,5 +1,8 @@
 // Place your settings in this file to overwrite default and user settings.
 {
   "files.autoSave": "afterDelay",
-  "files.autoSaveDelay": 250
+  "files.autoSaveDelay": 250,
+  "docthis.includeMemberOfOnClassMembers": false,
+  "docthis.includeMemberOfOnInterfaceMembers": false,
+  "docthis.includeTypes": false
 }

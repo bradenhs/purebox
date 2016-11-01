@@ -46,8 +46,8 @@ module.exports =
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	const PureBox_1 = __webpack_require__(1);
-	exports.createBox = PureBox_1.PureBox.createBox;
+	const ReactPureBox_1 = __webpack_require__(2);
+	exports.createBox = ReactPureBox_1.ReactPureBox.createBox;
 
 
 /***/ },
@@ -75,6 +75,23 @@ module.exports =
 	    }
 	}
 	exports.PureBox = PureBox;
+
+
+/***/ },
+/* 2 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	const PureBox_1 = __webpack_require__(1);
+	class ReactPureBox extends PureBox_1.PureBox {
+	    static createBox() {
+	        return new ReactPureBox();
+	    }
+	    shout(message) {
+	        this.say(message.toUpperCase());
+	    }
+	}
+	exports.ReactPureBox = ReactPureBox;
 
 
 /***/ }

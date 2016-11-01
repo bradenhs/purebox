@@ -3,9 +3,12 @@
     "target": "es6",
     "moduleResolution": "node",
     "module": "commonjs",
-    "declaration": true
+    "declaration": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
   },
   "exclude": [
+    "src",
     "node_modules",
     "dev"
   ]

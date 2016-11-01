@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { some, each, cloneDeep, has, clone, forOwn } from 'lodash';
+import { cloneDeep, clone, each, forOwn, has, some } from 'lodash';
 import { log } from './log';
 import { ml } from './utils';
 
@@ -58,15 +58,18 @@ export class PureBox<State> {
   private _state: State;
   private _observersToNotify: (() => void)[] = [];
   private _queuedUpdates: (() => void)[] = [];
-  private _mutatingObj: any;
+  private _mutatingObj: Object;
   private _round: number;
   private _options: IPureBoxOptions;
   private _history: IOperation[] = [];
   private _diffLoggerActive: boolean = true;
   private _listeningForPrimitive: boolean = false;
-  private _lastAccessedPrimitive: IPrimitive<any>;
+  private _lastAccessedPrimitive: IPrimitive<Number | Boolean | String>;
 
-  constructor(initialState: State, options: IPureBoxOptions = defaultOptions) {
+  public constructor (
+    initialState: State,
+    options: IPureBoxOptions = defaultOptions
+  ) {
     this._options = cloneDeep(options);
     this._state = cloneDeep(initialState);
     this._stateProxy = this._proxy(this._state);
@@ -81,7 +84,7 @@ export class PureBox<State> {
   }
 
   public at<T>(stateChild: T) {
-    let primitive: IPrimitive<T>;
+    let primitive;
     if (!this._listeningForPrimitive) {
       throw Error(
         ml`[PUREBOX] The 'at' method of your box object was accessed in an
@@ -135,12 +138,12 @@ export class PureBox<State> {
       },
     };
   }
-
+ 
   public pureComponent<T>(component: (props: T) => JSX.Element) {
     const getRound = () => this.round;
     return React.createClass<T, {}>({
-      shouldComponentUpdate(nextProps) {
-        return some(nextProps, (prop, key) => {
+      shouldComponentUpdate(nextProps: T) {
+        return some(nextProps, (prop: Object, key: string) => {
           if (prop !== this.props[key]) {
             return true;
           }
@@ -225,7 +228,8 @@ export class PureBox<State> {
     // Run the updater
     this._history.push({
       round: this._round,
-      name: operationName.trim(), diffs: [],
+      name: operationName.trim(),
+      diffs: [],
     });
     if (stateChild[IS_PRIMITIVE]) {
       const stateChildParent = primitive.parent[PARENT];
@@ -257,7 +261,7 @@ export class PureBox<State> {
           child[PARENT] = this._mutatingObj;
         }
       });
-      const updateResult = updater(this._mutatingObj);
+      const updateResult = updater(this._mutatingObj as T);
       if (updateResult === this._mutatingObj) {
         this._diffLoggerActive = false;
       }
@@ -291,7 +295,7 @@ export class PureBox<State> {
     }
   }
 
-  private _isPrimitive(val: any) {
+  private _isPrimitive(val: Object) {
     return val === null || val === void 0 ||
            val.constructor === Number ||
            val.constructor === Boolean ||
@@ -299,7 +303,7 @@ export class PureBox<State> {
   }
 
   private _proxy<T>(
-    node: T, parent: any = this._stateProxy, keyInParent: string = ''
+    node: T, parent: Object = this._stateProxy, keyInParent: string = ''
   ) {
     if (
       node === null  || node === void 0  || node[PROXY] !== void 0 ||
@@ -399,7 +403,8 @@ export class PureBox<State> {
           // TODO find out why this was wrongfully triggering.
           // throw Error(
           //   ml`[PUREBOX] Error while executing operation
-          //   "${this._currentOperation().name}". Only the value provided in the
+          //   "${this._currentOperation().name}". Only the value provided in
+          // the
           //   update method is mutable.`
           // );
         }
@@ -422,7 +427,9 @@ export class PureBox<State> {
     return nodeProxy;
   }
 
-  private _recordDiff(obj, key, newValue, previousValue) {
+  private _recordDiff(
+    obj: Object, key: string, newValue: Object, previousValue: Object
+  ) {
     if (Array.isArray(obj) && key === 'length' && newValue < previousValue) {
       let removedItemIndex = newValue;
       while (removedItemIndex < previousValue) {
